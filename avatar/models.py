@@ -125,8 +125,8 @@ class Avatar(models.Model):
         base = parts.pop(0)
         base = Image.open(StringIO(base.image.read()))
         for part in parts:
-            buffer = StringIO(part.image.read())
-            image = Image.open(buffer)
+            buffer_ = StringIO(part.image.read())
+            image = Image.open(buffer_)
             base.paste(image, image)
 
         # Create the main image
