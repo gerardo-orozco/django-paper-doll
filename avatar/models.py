@@ -10,6 +10,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
+# Image upload directories
 def category_upload_path(instance, filename):
     return '/'.join(['categories', filename])
 
@@ -30,19 +31,34 @@ def avatar_image_upload_path(instance, filename):
     return '/'.join(['avatars', 'images', filename])
 
 
-CATEGORIES_DIR = getattr(settings, 'CATEGORIES_DIR', category_upload_path)
-PARTS_THUMBS_DIR = getattr(settings, 'PARTS_THUMBS_DIR', part_thumbnail_upload_path)
-PARTS_IMAGES_DIR = getattr(settings, 'PARTS_IMAGES_DIR', part_image_upload_path)
-AVATARS_THUMBS_DIR = getattr(settings, 'AVATARS_THUMBS_DIR', avatar_thumbnail_upload_path)
-AVATARS_IMAGES_DIR = getattr(settings, 'AVATARS_IMAGES_DIR', avatar_image_upload_path)
+# Customizations
+AVATAR_CATEGORIES_DIR = getattr(settings, 'CATEGORIES_DIR',
+                                category_upload_path)
+AVATAR_PARTS_THUMBS_DIR = getattr(settings, 'PARTS_THUMBS_DIR',
+                                  part_thumbnail_upload_path)
+AVATAR_PARTS_IMAGES_DIR = getattr(settings, 'PARTS_IMAGES_DIR',
+                                  part_image_upload_path)
+AVATAR_AVATARS_THUMBS_DIR = getattr(settings, 'AVATARS_THUMBS_DIR',
+                                    avatar_thumbnail_upload_path)
+AVATAR_AVATARS_IMAGES_DIR = getattr(settings, 'AVATARS_IMAGES_DIR',
+                                    avatar_image_upload_path)
+AVATAR_IMAGE_PREFIX = getattr(settings, 'AVATAR_IMAGE_PREFIX', 'avatar')
+AVATAR_THUMBNAIL_PREFIX = getattr(settings, 'AVATAR_THUMBNAIL_PREFIX',
+                                  AVATAR_IMAGE_PREFIX)
+AVATAR_DEFAULT_THUMBNAIL_RATE = getattr(settings,
+                                        'AVATAR_DEFAULT_THUMBNAIL_RATE', 0.2)
 
 
+# Actual models
 class Category(models.Model):
     label = models.CharField(_(u'label'), max_length=50)
     display = models.CharField(_(u'display'), max_length=50, null=True)
-    description = models.CharField(_(u'description'), max_length=100, null=True, blank=True)
+    description = models.CharField(_(u'description'), max_length=100,
+                                   null=True, blank=True)
     required = models.BooleanField(_(u'is required'), default=False)
-    thumbnail = models.ImageField(_(u'thumbnail'), upload_to=CATEGORIES_DIR, blank=True, null=True)
+    thumbnail = models.ImageField(_(u'thumbnail'),
+                                    upload_to=AVATAR_CATEGORIES_DIR,
+                                    blank=True, null=True)
     layer_index = models.PositiveIntegerField(_(u'layer index'), unique=True)
 
     def __unicode__(self):
@@ -68,12 +84,15 @@ class PartManager(models.Manager):
 
 
 class Part(models.Model):
-    category = models.ForeignKey(Category, related_name='parts', verbose_name=_(u'category'))
+    category = models.ForeignKey(Category, related_name='parts',
+                                 verbose_name=_(u'category'))
     label = models.CharField(_(u'label'), max_length=30)
     display = models.CharField(_(u'display'), max_length=50, null=True)
     is_default = models.BooleanField(_(u'is_default'), default=False)
-    thumbnail = models.ImageField(_(u'thumbnail'), upload_to=PARTS_THUMBS_DIR, blank=True, null=True)
-    image = models.ImageField(upload_to=PARTS_IMAGES_DIR)
+    thumbnail = models.ImageField(_(u'thumbnail'),
+                                  upload_to=AVATAR_PARTS_THUMBS_DIR,
+                                  blank=True, null=True)
+    image = models.ImageField(upload_to=AVATAR_PARTS_IMAGES_DIR)
 
     def set_as_default(self, commit=True):
         """
@@ -86,7 +105,8 @@ class Part(models.Model):
             self.save()
 
     def __unicode__(self):
-        return u'({category}) {name}'.format(category=self.category, name=self.display)
+        return u'({category}) {name}'.format(category=self.category,
+                                             name=self.display)
 
     class Meta:
         verbose_name = _(u'part')
@@ -95,9 +115,12 @@ class Part(models.Model):
 
 
 class Avatar(models.Model):
-    parts = models.ManyToManyField(Part, related_name='avatars', blank=True, null=True)
-    thumbnail = models.ImageField(upload_to=AVATARS_THUMBS_DIR, blank=True, null=True)
-    image = models.ImageField(upload_to=AVATARS_IMAGES_DIR, blank=True, null=True)
+    parts = models.ManyToManyField(Part, related_name='avatars', blank=True,
+                                   null=True)
+    thumbnail = models.ImageField(upload_to=AVATAR_AVATARS_THUMBS_DIR,
+                                  blank=True, null=True)
+    image = models.ImageField(upload_to=AVATAR_AVATARS_IMAGES_DIR, blank=True,
+                              null=True)
 
     def to_dict(self):
         """
@@ -168,7 +191,7 @@ class Avatar(models.Model):
         # Create the thumbnail
         size = thumb_size
         if not thumb_size:
-            rate = 0.2
+            rate = AVATAR_DEFAULT_THUMBNAIL_RATE
             size = base.size
             size = (int(size[0] * rate), int(size[1] * rate))
         base.thumbnail(size)
@@ -181,8 +204,10 @@ class Avatar(models.Model):
     def save(self, thumb_size=None, *args, **kwargs):
         if self.pk:
             image, thumbnail = self.get_pngs(thumb_size=thumb_size)
-            image.name = 'avatar_{pk}.png'.format(pk=self.pk)
-            thumbnail.name = 'avatar_{pk}.png'.format(pk=self.pk)
+            image.name = '{prefix}_{pk}.png'.format(prefix=AVATAR_IMAGE_PREFIX,
+                                                    pk=self.pk)
+            thumbnail.name = '{prefix}_{pk}.png'.format(
+                                    prefix=AVATAR_THUMBNAIL_PREFIX, pk=self.pk)
             self.image = image
             self.thumbnail = thumbnail
         super(Avatar, self).save(*args, **kwargs)
