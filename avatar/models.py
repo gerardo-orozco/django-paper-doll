@@ -58,12 +58,32 @@ class Category(models.Model):
         ordering = ('layer_index', 'label')
 
 
+class PartManager(models.Manager):
+    def get_default(self):
+        parts = {}
+        default_parts = self.filter(is_default=True)
+        for part in default_parts:
+            parts[part.category.label] = part
+        return parts
+
+
 class Part(models.Model):
     category = models.ForeignKey(Category, related_name='parts', verbose_name=_(u'category'))
     label = models.CharField(_(u'label'), max_length=30)
     display = models.CharField(_(u'display'), max_length=50, null=True)
+    is_default = models.BooleanField(_(u'is_default'), default=False)
     thumbnail = models.ImageField(_(u'thumbnail'), upload_to=PARTS_THUMBS_DIR, blank=True, null=True)
     image = models.ImageField(upload_to=PARTS_IMAGES_DIR)
+
+    def set_as_default(self, commit=True):
+        """
+        Sets the current Part as default for its Category so it gets
+        automatically added to the avatar if no Part is given for such Category.
+        """
+        self.category.parts.update(is_default=False)
+        self.is_default = True
+        if commit:
+            self.save()
 
     def __unicode__(self):
         return u'({category}) {name}'.format(category=self.category, name=self.display)
@@ -71,7 +91,7 @@ class Part(models.Model):
     class Meta:
         verbose_name = _(u'part')
         verbose_name_plural = _(u'parts')
-        ordering = ('category__layer_index',)
+        ordering = ('category__layer_index', 'label')
 
 
 class Avatar(models.Model):
@@ -97,7 +117,17 @@ class Avatar(models.Model):
         """
         return json.dumps(self.to_dict())
 
-    def from_json(self, json):
+    def set_default(self, current_parts):
+        """
+        Sets the default part for each category set in settings if no part
+        was set for such categories.
+        """
+        default_parts = Part.objects.get_default()
+        for category, part in default_parts.iteritems():
+            if not category in current_parts:
+                current_parts[category] = part
+
+    def update_from_json(self, json):
         """
         Uses the given JSON to update the parts the Avatar image is built from.
         """
@@ -113,6 +143,7 @@ class Avatar(models.Model):
 
             category = part.category.label
             parts[category] = part
+            self.set_default(parts)
 
         self.parts = parts.values()
 

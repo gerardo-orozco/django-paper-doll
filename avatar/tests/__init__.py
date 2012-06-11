@@ -1,0 +1,1 @@
+from avatar.tests.tests import AvatarTests
