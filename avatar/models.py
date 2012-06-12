@@ -86,13 +86,15 @@ class PartManager(models.Manager):
 class Part(models.Model):
     category = models.ForeignKey(Category, related_name='parts',
                                  verbose_name=_(u'category'))
-    label = models.CharField(_(u'label'), max_length=30)
-    display = models.CharField(_(u'display'), max_length=50, null=True)
+    label = models.CharField(_(u'label (for in-app use)'), max_length=30)
+    display = models.CharField(_(u'verbose name'), max_length=50, null=True)
     is_default = models.BooleanField(_(u'is_default'), default=False)
     thumbnail = models.ImageField(_(u'thumbnail'),
                                   upload_to=AVATAR_PARTS_THUMBS_DIR,
                                   blank=True, null=True)
     image = models.ImageField(upload_to=AVATAR_PARTS_IMAGES_DIR)
+
+    objects = PartManager()
 
     def set_as_default(self, commit=True):
         """
@@ -105,8 +107,7 @@ class Part(models.Model):
             self.save()
 
     def __unicode__(self):
-        return u'({category}) {name}'.format(category=self.category,
-                                             name=self.display)
+        return u'({0}) {1}'.format(self.category, self.display)
 
     class Meta:
         verbose_name = _(u'part')
