@@ -7,17 +7,17 @@ import Image
 from django.core.files.base import ContentFile
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from avatar.settings import (
-    AVATAR_CATEGORIES_DIR,
-    AVATAR_PARTS_THUMBS_DIR,
-    AVATAR_PARTS_IMAGES_DIR,
-    AVATAR_AVATARS_THUMBS_DIR,
-    AVATAR_AVATARS_IMAGES_DIR,
-    AVATAR_IMAGE_NAME_FORMATTER,
-    AVATAR_THUMBNAIL_NAME_FORMATTER,
-    AVATAR_DIGEST_LENGTH,
-    AVATAR_DIGESTER,
-    AVATAR_DEFAULT_THUMBNAIL_RATE
+from paper_doll.settings import (
+    PAPER_DOLL_CATEGORIES_DIR,
+    PAPER_DOLL_PARTS_THUMBS_DIR,
+    PAPER_DOLL_PARTS_IMAGES_DIR,
+    PAPER_DOLL_AVATARS_THUMBS_DIR,
+    PAPER_DOLL_AVATARS_IMAGES_DIR,
+    PAPER_DOLL_IMAGE_NAME_FORMATTER,
+    PAPER_DOLL_THUMBNAIL_NAME_FORMATTER,
+    PAPER_DOLL_DIGEST_LENGTH,
+    PAPER_DOLL_DIGESTER,
+    PAPER_DOLL_DEFAULT_THUMBNAIL_RATE
 )
 
 
@@ -29,7 +29,7 @@ class Category(models.Model):
                                    null=True, blank=True)
     required = models.BooleanField(_(u'is required'), default=False)
     thumbnail = models.ImageField(_(u'thumbnail'),
-                                    upload_to=AVATAR_CATEGORIES_DIR,
+                                    upload_to=PAPER_DOLL_CATEGORIES_DIR,
                                     blank=True, null=True)
     layer_index = models.PositiveIntegerField(_(u'layer index'), unique=True)
 
@@ -62,9 +62,9 @@ class Part(models.Model):
     display = models.CharField(_(u'verbose name'), max_length=50, null=True)
     is_default = models.BooleanField(_(u'is_default'), default=False)
     thumbnail = models.ImageField(_(u'thumbnail'),
-                                  upload_to=AVATAR_PARTS_THUMBS_DIR,
+                                  upload_to=PAPER_DOLL_PARTS_THUMBS_DIR,
                                   blank=True, null=True)
-    image = models.ImageField(upload_to=AVATAR_PARTS_IMAGES_DIR)
+    image = models.ImageField(upload_to=PAPER_DOLL_PARTS_IMAGES_DIR)
 
     objects = PartManager()
 
@@ -90,11 +90,11 @@ class Part(models.Model):
 class Avatar(models.Model):
     parts = models.ManyToManyField(Part, related_name='avatars', blank=True,
                                    null=True)
-    thumbnail = models.ImageField(upload_to=AVATAR_AVATARS_THUMBS_DIR,
+    thumbnail = models.ImageField(upload_to=PAPER_DOLL_AVATARS_THUMBS_DIR,
                                   blank=True, null=True)
-    image = models.ImageField(upload_to=AVATAR_AVATARS_IMAGES_DIR, blank=True,
+    image = models.ImageField(upload_to=PAPER_DOLL_AVATARS_IMAGES_DIR, blank=True,
                               null=True)
-    digest = models.CharField(max_length=AVATAR_DIGEST_LENGTH)
+    digest = models.CharField(max_length=PAPER_DOLL_DIGEST_LENGTH)
 
     def to_dict(self):
         """
@@ -171,7 +171,7 @@ class Avatar(models.Model):
         # Create the thumbnail
         size = thumb_size
         if not thumb_size:
-            rate = AVATAR_DEFAULT_THUMBNAIL_RATE
+            rate = PAPER_DOLL_DEFAULT_THUMBNAIL_RATE
             size = base.size
             size = (int(size[0] * rate), int(size[1] * rate))
         base.thumbnail(size)
@@ -185,14 +185,14 @@ class Avatar(models.Model):
         if self.pk:
             image, thumbnail = self.get_pngs(thumb_size=thumb_size)
 
-            self.digest = AVATAR_DIGESTER(self)
+            self.digest = PAPER_DOLL_DIGESTER(self)
             # format main image name
-            image_formatter = AVATAR_IMAGE_NAME_FORMATTER
+            image_formatter = PAPER_DOLL_IMAGE_NAME_FORMATTER
             image_name = image_formatter(self)
             image.name = '{}.png'.format(image_name)
 
             # format thumbnail image name
-            thumbnail_formatter = AVATAR_THUMBNAIL_NAME_FORMATTER
+            thumbnail_formatter = PAPER_DOLL_THUMBNAIL_NAME_FORMATTER
             thumbnail_name = thumbnail_formatter(self)
             thumbnail.name = '{}.png'.format(thumbnail_name)
 

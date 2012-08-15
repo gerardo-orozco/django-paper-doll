@@ -1,13 +1,11 @@
-from django.conf import settings
 from django.contrib import admin
 from django.core.urlresolvers import reverse
-from avatar.models import Category, Part, Avatar
-
-# Percent rate of images being show in lists
-AVATAR_ADMIN_IMAGE_RATE = getattr(settings, 'AVATAR_ADMIN_IMAGE_RATE', 1)
-AVATAR_ADMIN_THUMB_RATE = getattr(settings, 'AVATAR_ADMIN_THUMB_RATE', 1)
-AVATAR_ADMIN_AVATAR_RATE = getattr(settings, 'AVATAR_ADMIN_AVATAR_RATE',
-                                   AVATAR_ADMIN_IMAGE_RATE)
+from paper_doll.models import Category, Part, Avatar
+from paper_doll.settings import (
+    PAPER_DOLL_ADMIN_IMAGE_RATE,
+    PAPER_DOLL_ADMIN_THUMB_RATE,
+    PAPER_DOLL_ADMIN_PAPER_DOLL_RATE
+)
 
 
 class PartInline(admin.TabularInline):
@@ -36,8 +34,8 @@ class PartAdmin(admin.ModelAdmin):
         if obj.image:
             return "<img src='%s' width='%s' height='%s'>" % (
                 obj.image.url,
-                int(obj.image.width * AVATAR_ADMIN_IMAGE_RATE),
-                int(obj.image.height * AVATAR_ADMIN_IMAGE_RATE))
+                int(obj.image.width * PAPER_DOLL_ADMIN_IMAGE_RATE),
+                int(obj.image.height * PAPER_DOLL_ADMIN_IMAGE_RATE))
     image_img.short_description = "Image"
     image_img.allow_tags = True
 
@@ -45,14 +43,14 @@ class PartAdmin(admin.ModelAdmin):
         if obj.thumbnail:
             return "<img src='%s' width='%s' height='%s'>" % (
                 obj.image.url,
-                int(obj.image.width * AVATAR_ADMIN_THUMB_RATE),
-                int(obj.image.height * AVATAR_ADMIN_THUMB_RATE))
+                int(obj.image.width * PAPER_DOLL_ADMIN_THUMB_RATE),
+                int(obj.image.height * PAPER_DOLL_ADMIN_THUMB_RATE))
     thumbnail_img.short_description = "Thumbnail"
     thumbnail_img.allow_tags = True
 
     def set_default(self, obj):
         if not obj.is_default:
-            return "<a href='%s' class='avatar-set-default'>Set as default</a>" % (
+            return "<a href='%s' class='paper-doll-set-default'>Set as default</a>" % (
                         reverse('set_default_part', args=[obj.pk]))
         return ""
     set_default.short_description = "Actions"
@@ -67,8 +65,8 @@ class AvatarAdmin(admin.ModelAdmin):
         if obj.image:
             return "<img src='%s' width='%s' height='%s'>" % (
                 obj.image.url,
-                int(obj.image.width * AVATAR_ADMIN_AVATAR_RATE),
-                int(obj.image.height * AVATAR_ADMIN_AVATAR_RATE))
+                int(obj.image.width * PAPER_DOLL_ADMIN_PAPER_DOLL_RATE),
+                int(obj.image.height * PAPER_DOLL_ADMIN_PAPER_DOLL_RATE))
     image_img.short_description = "Image"
     image_img.allow_tags = True
 

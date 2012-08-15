@@ -5,6 +5,8 @@ from django.conf import settings
 
 DEFAULT_THUMBNAIL_RATE = 0.2
 DEFAULT_DIGEST_LENGTH = 32
+ADMIN_DEFAULT_IMAGE_RATE = 1
+ADMIN_DEFAULT_THUMB_RATE = 1
 
 
 def category_upload_path(instance, filename):
@@ -38,7 +40,7 @@ def avatar_thumbnail_name_format(instance):
 
 
 def avatar_digester(instance):
-    limit = getattr(settings, 'AVATAR_DIGEST_LENGTH', DEFAULT_DIGEST_LENGTH)
+    limit = getattr(settings, 'PAPER_DOLL_DIGEST_LENGTH', DEFAULT_DIGEST_LENGTH)
     content = '%s%s' % (instance.pk, datetime.now())
     digest = hashlib.sha1(content)
     return digest.hexdigest()[:limit]
