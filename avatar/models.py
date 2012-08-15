@@ -1,5 +1,3 @@
-from datetime import datetime
-import hashlib
 import json
 try:
     from cStringIO import StringIO
@@ -7,75 +5,20 @@ except ImportError:
     from StringIO import StringIO
 import Image
 from django.core.files.base import ContentFile
-from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-
-# Defaults
-DEFAULT_THUMBNAIL_RATE = 0.2
-DEFAULT_DIGEST_LENGTH = 32
-
-
-def category_upload_path(instance, filename):
-    return '/'.join(['categories', filename])
-
-
-def part_thumbnail_upload_path(instance, filename):
-    return '/'.join(['parts', 'thumbnails', instance.category.label, filename])
-
-
-def part_image_upload_path(instance, filename):
-    return '/'.join(['parts', 'images', instance.category.label, filename])
-
-
-def avatar_thumbnail_upload_path(instance, filename):
-    return '/'.join(['avatars', 'thumbnails', filename])
-
-
-def avatar_image_upload_path(instance, filename):
-    return '/'.join(['avatars', 'images', filename])
-
-
-def avatar_digester(instance):
-    limit = getattr(settings, 'AVATAR_DIGEST_LENGTH', DEFAULT_DIGEST_LENGTH)
-    content = '%s%s' % (instance.pk, datetime.now())
-    digest = hashlib.sha1(content)
-    return digest.hexdigest()[:limit]
-
-
-def avatar_image_name_format(instance):
-    # May support more formats later, forcing PNG for now
-    return instance.digest
-
-
-def avatar_thumbnail_name_format(instance):
-    # May support more formats later, forcing PNG for now
-    return 'thumb_{}'.format(instance.digest)
-
-
-# Settings
-AVATAR_CATEGORIES_DIR = getattr(settings, 'CATEGORIES_DIR',
-                                category_upload_path)
-AVATAR_PARTS_THUMBS_DIR = getattr(settings, 'PARTS_THUMBS_DIR',
-                                  part_thumbnail_upload_path)
-AVATAR_PARTS_IMAGES_DIR = getattr(settings, 'PARTS_IMAGES_DIR',
-                                  part_image_upload_path)
-AVATAR_AVATARS_THUMBS_DIR = getattr(settings, 'AVATARS_THUMBS_DIR',
-                                    avatar_thumbnail_upload_path)
-AVATAR_AVATARS_IMAGES_DIR = getattr(settings, 'AVATARS_IMAGES_DIR',
-                                    avatar_image_upload_path)
-AVATAR_IMAGE_NAME_FORMATTER = getattr(settings, 'AVATAR_IMAGE_NAME_FORMATTER',
-                                      avatar_image_name_format)
-AVATAR_THUMBNAIL_NAME_FORMATTER = getattr(settings,
-                                          'AVATAR_THUMBNAIL_NAME_FORMATTER',
-                                          avatar_thumbnail_name_format)
-AVATAR_DIGEST_LENGTH = getattr(settings, 'AVATAR_DIGEST_LENGTH',
-                               DEFAULT_DIGEST_LENGTH)
-AVATAR_DIGESTER = getattr(settings, 'AVATAR_DIGESTER', avatar_digester)
-AVATAR_DEFAULT_THUMBNAIL_RATE = getattr(settings,
-                                        'AVATAR_DEFAULT_THUMBNAIL_RATE',
-                                        DEFAULT_THUMBNAIL_RATE)
+from avatar.settings import (
+    AVATAR_CATEGORIES_DIR,
+    AVATAR_PARTS_THUMBS_DIR,
+    AVATAR_PARTS_IMAGES_DIR,
+    AVATAR_AVATARS_THUMBS_DIR,
+    AVATAR_AVATARS_IMAGES_DIR,
+    AVATAR_IMAGE_NAME_FORMATTER,
+    AVATAR_THUMBNAIL_NAME_FORMATTER,
+    AVATAR_DIGEST_LENGTH,
+    AVATAR_DIGESTER,
+    AVATAR_DEFAULT_THUMBNAIL_RATE
+)
 
 
 # Actual models
