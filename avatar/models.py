@@ -1,16 +1,22 @@
-import Image
+from datetime import datetime
+import hashlib
 import json
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
+import Image
 from django.core.files.base import ContentFile
 from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
 
-# Image upload directories
+# Defaults
+DEFAULT_THUMBNAIL_RATE = 0.2
+DEFAULT_DIGEST_LENGTH = 32
+
+
 def category_upload_path(instance, filename):
     return '/'.join(['categories', filename])
 
@@ -31,7 +37,24 @@ def avatar_image_upload_path(instance, filename):
     return '/'.join(['avatars', 'images', filename])
 
 
-# Customizations
+def avatar_digester(instance):
+    limit = getattr(settings, 'AVATAR_DIGEST_LENGTH', DEFAULT_DIGEST_LENGTH)
+    content = '%s%s' % (instance.pk, datetime.now())
+    digest = hashlib.sha1(content)
+    return digest.hexdigest()[:limit]
+
+
+def avatar_image_name_format(instance):
+    # May support more formats later, forcing PNG for now
+    return instance.digest
+
+
+def avatar_thumbnail_name_format(instance):
+    # May support more formats later, forcing PNG for now
+    return 'thumb_{}'.format(instance.digest)
+
+
+# Settings
 AVATAR_CATEGORIES_DIR = getattr(settings, 'CATEGORIES_DIR',
                                 category_upload_path)
 AVATAR_PARTS_THUMBS_DIR = getattr(settings, 'PARTS_THUMBS_DIR',
@@ -42,11 +65,17 @@ AVATAR_AVATARS_THUMBS_DIR = getattr(settings, 'AVATARS_THUMBS_DIR',
                                     avatar_thumbnail_upload_path)
 AVATAR_AVATARS_IMAGES_DIR = getattr(settings, 'AVATARS_IMAGES_DIR',
                                     avatar_image_upload_path)
-AVATAR_IMAGE_PREFIX = getattr(settings, 'AVATAR_IMAGE_PREFIX', 'avatar')
-AVATAR_THUMBNAIL_PREFIX = getattr(settings, 'AVATAR_THUMBNAIL_PREFIX',
-                                  AVATAR_IMAGE_PREFIX)
+AVATAR_IMAGE_NAME_FORMATTER = getattr(settings, 'AVATAR_IMAGE_NAME_FORMATTER',
+                                      avatar_image_name_format)
+AVATAR_THUMBNAIL_NAME_FORMATTER = getattr(settings,
+                                          'AVATAR_THUMBNAIL_NAME_FORMATTER',
+                                          avatar_thumbnail_name_format)
+AVATAR_DIGEST_LENGTH = getattr(settings, 'AVATAR_DIGEST_LENGTH',
+                               DEFAULT_DIGEST_LENGTH)
+AVATAR_DIGESTER = getattr(settings, 'AVATAR_DIGESTER', avatar_digester)
 AVATAR_DEFAULT_THUMBNAIL_RATE = getattr(settings,
-                                        'AVATAR_DEFAULT_THUMBNAIL_RATE', 0.2)
+                                        'AVATAR_DEFAULT_THUMBNAIL_RATE',
+                                        DEFAULT_THUMBNAIL_RATE)
 
 
 # Actual models
@@ -122,6 +151,7 @@ class Avatar(models.Model):
                                   blank=True, null=True)
     image = models.ImageField(upload_to=AVATAR_AVATARS_IMAGES_DIR, blank=True,
                               null=True)
+    digest = models.CharField(max_length=AVATAR_DIGEST_LENGTH)
 
     def to_dict(self):
         """
@@ -151,18 +181,24 @@ class Avatar(models.Model):
             if not category in current_parts:
                 current_parts[category] = part
 
-    def update_from_json(self, json):
+    def update(self, json_or_dict):
         """
         Uses the given JSON to update the parts the Avatar image is built from.
         """
+        if not isinstance(json_or_dict, dict):
+            try:
+                json_or_dict = json.loads(json_or_dict)
+            except TypeError as e:
+                e.message = 'Please use a JSON-like string or a dictionary'
+                raise e
         parts = {}
 
         # Clean up parts so we don't save two or more parts of one category.
-        for part_pk in json.values():
+        for part_pk in json_or_dict.values():
             try:
                 part = Part.objects.get(pk=part_pk)
             except Part.DoesNotExist as e:
-                e.message = 'Part object with pk={pk} does not exist.'.format(pk=part_pk)
+                e.message = 'Part with pk={} does not exist.'.format(part_pk)
                 raise e
 
             category = part.category.label
@@ -205,10 +241,19 @@ class Avatar(models.Model):
     def save(self, thumb_size=None, *args, **kwargs):
         if self.pk:
             image, thumbnail = self.get_pngs(thumb_size=thumb_size)
-            image.name = '{prefix}_{pk}.png'.format(prefix=AVATAR_IMAGE_PREFIX,
-                                                    pk=self.pk)
-            thumbnail.name = '{prefix}_{pk}.png'.format(
-                                    prefix=AVATAR_THUMBNAIL_PREFIX, pk=self.pk)
+
+            self.digest = AVATAR_DIGESTER(self)
+            # format main image name
+            image_formatter = AVATAR_IMAGE_NAME_FORMATTER
+            image_name = image_formatter(self)
+            image.name = '{}.png'.format(image_name)
+
+            # format thumbnail image name
+            thumbnail_formatter = AVATAR_THUMBNAIL_NAME_FORMATTER
+            thumbnail_name = thumbnail_formatter(self)
+            thumbnail.name = '{}.png'.format(thumbnail_name)
+
             self.image = image
             self.thumbnail = thumbnail
+
         super(Avatar, self).save(*args, **kwargs)
