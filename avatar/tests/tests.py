@@ -1,32 +1,71 @@
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-from django.core.files.base import ContentFile
 from django.test import TestCase
 
 
-class AvatarTests(TestCase):
-    def setUp(self):
+class CategoryTest(TestCase):
+    def test_save(self):
         pass
 
-    def tearDown(self):
+
+class PartTest(TestCase):
+    def test_manager_get_default(self):
         pass
 
-    def get_test_file(self):
-        import os
-        path_to_file = '%s' % os.getcwd()
-        f = open(path_to_file, 'rb')
-        file_to_upload = StringIO(f.read())
-        file_to_upload = ContentFile(file_to_upload.getvalue())
-        file_to_upload.name = f.name
-        return file_to_upload
+    def test_set_as_default(self):
+        pass
 
+
+class AvatarTest(TestCase):
     def test_to_dict(self):
         pass
 
     def test_to_json(self):
         pass
 
-    def test_from_json(self):
+    def test_set_default(self):
+        pass
+
+    def test_update_from_json(self):
+        pass
+
+    def test_get_pngs(self):
+        pass
+
+    def test_save(self):
+        pass
+
+
+class AdminViewTests(TestCase):
+    def test_set_default_part(self):
+        pass
+
+
+class SettingsTest(TestCase):
+    def tearDown(self):
+        pass
+
+    def test_categories_dir(self):
+        pass
+
+    def test_parts_thumbs_dir(self):
+        pass
+
+    def test_parts_images_dir(self):
+        pass
+
+    def test_pats_images_dir(self):
+        pass
+
+    def test_avatars_thumbs_dir(self):
+        pass
+
+    def test_avatars_images_dir(self):
+        pass
+
+    def test_image_prefix(self):
+        pass
+
+    def test_thumbnail_prefix(self):
+        pass
+
+    def test_default_thumbnail_rate(self):
         pass

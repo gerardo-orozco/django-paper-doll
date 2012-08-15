@@ -1,1 +1,1 @@
-from avatar.tests.tests import AvatarTests
+from avatar.tests.tests import *
